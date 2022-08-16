@@ -30,4 +30,21 @@ Implementations are reusable bits of code using popular odin libraries/bidings, 
 * Most functions have been wrapped or bound, those missing will either be added by the maintainer over time or by PR (PRs VERY WELCOME)
 
 ## Building cimgui
+### Windows
 If you want to build cimgui yourself instead of using the binaries that exist in the repo, you can just call `make cimgui` from a command prompt that has `cl` and `link` in their path.
+
+### Linux
+In the `cimgui Makefile`, add `-fno-threadsafe-statics` to `CXXFLAGS`.
+
+Example:
+```
+CXXFLAGS=-O2 -fno-exceptions -fno-rtti -fno-threadsafe-statics
+```
+
+Now, in the cimgui directory run the following:
+1. `make`
+2. `make static`
+
+Rename the `libcimgui.a` library in the cimgui folder to `cimgui.a`.
+
+Move `cimgui.a` to the `odin-imgui/external` folder.
