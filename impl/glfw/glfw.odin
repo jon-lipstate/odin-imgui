@@ -45,7 +45,7 @@ setup_state :: proc(window: glfw.WindowHandle, install_callbacks: bool) {
     io.key_map[imgui.Key.Space]       = i32(glfw.KEY_SPACE);
     io.key_map[imgui.Key.Enter]       = i32(glfw.KEY_ENTER);
     io.key_map[imgui.Key.Escape]      = i32(glfw.KEY_ESCAPE);
-    io.key_map[imgui.Key.KeyPadEnter] = i32(glfw.KEY_KP_ENTER);
+    io.key_map[imgui.Key.KeypadEnter] = i32(glfw.KEY_KP_ENTER);
     io.key_map[imgui.Key.A]           = i32(glfw.KEY_A);
     io.key_map[imgui.Key.C]           = i32(glfw.KEY_C);
     io.key_map[imgui.Key.V]           = i32(glfw.KEY_V);

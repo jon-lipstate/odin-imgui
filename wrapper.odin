@@ -6,6 +6,7 @@ import "core:mem";
 
 
 
+
 // AUTO_GENERATED for 'ImDrawList_AddText_Vec2'
 swr_ImDrawList_AddText_Vec2 :: proc(self: ^Draw_List, pos: Vec2, col: u32, text_begin: string, text_end: string) {
 	str3 := strings.clone_to_cstring(text_begin, context.temp_allocator);
@@ -308,6 +309,7 @@ wrapper_combo_str_arr :: proc(label: string, current_item: ^i32, items: []string
     return igCombo_Str_arr(l, current_item, &data[0], i32(len(items)), popup_max_height_in_items);
 }
 
+
 // AUTO_GENERATED for 'igCombo_Str'
 swr_igCombo_Str :: proc(label: string, current_item: ^i32, items_separated_by_zeros: string, popup_max_height_in_items: i32) -> bool {
 	str0 := strings.clone_to_cstring(label, context.temp_allocator);
@@ -321,10 +323,17 @@ wrapper_combo_fn_bool_ptr :: proc(label: string, current_item: ^i32, items_gette
     return igCombo_FnBoolPtr(l, current_item, items_getter, data, items_count, popup_max_height_in_items);
 }
 
+
 // AUTO_GENERATED for 'igDebugCheckVersionAndDataLayout'
 swr_igDebugCheckVersionAndDataLayout :: proc(version_str: string, sz_io: uint, sz_style: uint, sz_vec2: uint, sz_vec4: uint, sz_drawvert: uint, sz_drawidx: uint) -> bool {
 	str0 := strings.clone_to_cstring(version_str, context.temp_allocator);
 	return igDebugCheckVersionAndDataLayout(str0, sz_io, sz_style, sz_vec2, sz_vec4, sz_drawvert, sz_drawidx);
+}
+
+// AUTO_GENERATED for 'igDebugTextEncoding'
+swr_igDebugTextEncoding :: proc(text: string) {
+	str0 := strings.clone_to_cstring(text, context.temp_allocator);
+	igDebugTextEncoding(str0);
 }
 
 // AUTO_GENERATED for 'igDragFloat'
@@ -433,12 +442,14 @@ wrapper_get_window_pos :: proc() -> Vec2 {
     return res;
 }
 
+
 // PREDEFINED FOR 'igGetWindowSize'
 wrapper_get_window_size :: proc() -> Vec2 {
     res := Vec2{};
     igGetWindowSize(&res);
     return res;
 }
+
 
 // AUTO_GENERATED for 'igInputDouble'
 swr_igInputDouble :: proc(label: string, v: ^f64, step: f64, step_fast: f64, format: string, flags: Input_Text_Flags) -> bool {
@@ -519,6 +530,7 @@ wrapper_input_text :: #force_inline proc(label: string, buf: []u8, flags := Inpu
     return igInputText(l, cstring(&buf[0]), uint(len(buf)), flags, callback, user_data);
 }
 
+
 // AUTO_GENERATED for 'igInputTextMultiline'
 swr_igInputTextMultiline :: proc(label: string, buf: string, buf_size: uint, size: Vec2, flags: Input_Text_Flags, callback: Input_Text_Callback, user_data: rawptr) -> bool {
 	str0 := strings.clone_to_cstring(label, context.temp_allocator);
@@ -566,6 +578,7 @@ wrapper_list_box_fn_bool_ptr :: proc(label: string, current_item: ^i32, items_ge
     return igListBox_FnBoolPtr(l, current_item, items_getter, data, items_count, height_in_items);
 }
 
+
 // AUTO_GENERATED for 'igLoadIniSettingsFromDisk'
 swr_igLoadIniSettingsFromDisk :: proc(ini_filename: string) {
 	str0 := strings.clone_to_cstring(ini_filename, context.temp_allocator);
@@ -604,10 +617,10 @@ swr_igMenuItem_BoolPtr :: proc(label: string, shortcut: string, p_selected: ^boo
 	return igMenuItem_BoolPtr(str0, str1, p_selected, enabled);
 }
 
-// AUTO_GENERATED for 'igOpenPopup'
-swr_igOpenPopup :: proc(str_id: string, popup_flags: Popup_Flags) {
+// AUTO_GENERATED for 'igOpenPopup_Str'
+swr_igOpenPopup_Str :: proc(str_id: string, popup_flags: Popup_Flags) {
 	str0 := strings.clone_to_cstring(str_id, context.temp_allocator);
-	igOpenPopup(str0, popup_flags);
+	igOpenPopup_Str(str0, popup_flags);
 }
 
 // AUTO_GENERATED for 'igOpenPopupOnItemClick'
@@ -638,6 +651,7 @@ wrapper_plot_histogram_fn_float_ptr :: proc(label: string,
     igPlotHistogram_FnFloatPtr(l, values_getter, data, values_count, values_offset, overlay, scale_min, scale_max, graph_size);
 }
 
+
 // AUTO_GENERATED for 'igPlotLines_FloatPtr'
 swr_igPlotLines_FloatPtr :: proc(label: string, values: ^f32, values_count: i32, values_offset: i32, overlay_text: string, scale_min: f32, scale_max: f32, graph_size: Vec2, stride: i32) {
 	str0 := strings.clone_to_cstring(label, context.temp_allocator);
@@ -659,6 +673,7 @@ wrapper_plot_lines_fn_float_ptr :: proc(label: string,
     overlay := strings.clone_to_cstring(overlay_text, context.temp_allocator);
     igPlotLines_FnFloatPtr(l, values_getter, data, values_count, values_offset, overlay, scale_min, scale_max, graph_size);
 }
+
 
 // AUTO_GENERATED for 'igProgressBar'
 swr_igProgressBar :: proc(fraction: f32, size_arg: Vec2, overlay: string) {
@@ -713,6 +728,7 @@ swr_igSelectable_BoolPtr :: proc(label: string, p_selected: ^bool, flags: Select
 wrapper_set_allocator_functions :: #force_inline proc(alloc_func: Alloc_Func, free_func: Free_Func) {
     igSetAllocatorFunctions(alloc_func, free_func);
 }
+
 
 // AUTO_GENERATED for 'igSetClipboardText'
 swr_igSetClipboardText :: proc(text: string) {
@@ -882,6 +898,7 @@ wrapper_text :: proc(fmt_: string, args: ..any) {
     igTextUnformatted(cstring(&str[0]), cstring(&str[len(str)-1]));
 }
 
+
 // PREDEFINED FOR 'igTextColored'
 wrapper_text_colored :: proc(col: Vec4, fmt_: string, args: ..any) {
     fmt_str := fmt.tprintf("{}\x00", fmt_);
@@ -889,12 +906,14 @@ wrapper_text_colored :: proc(col: Vec4, fmt_: string, args: ..any) {
     igTextColored(col, cstring(&str[0]), nil);
 }
 
+
 // PREDEFINED FOR 'igTextDisabled'
 wrapper_text_disabled :: proc(fmt_: string, args: ..any) {
     fmt_str := fmt.tprintf("{}\x00", fmt_);
     str := transmute([]byte)fmt.tprintf(fmt_str, ..args);
     igTextDisabled(cstring(&str[0]), nil);
 }
+
 
 // PREDEFINED FOR 'igTextUnformatted'
 wrapper_unformatted_text :: proc(text: string) {
@@ -904,12 +923,14 @@ wrapper_unformatted_text :: proc(text: string) {
     igTextUnformatted(cstring(ptr), cstring(end_ptr));
 }
 
+
 // PREDEFINED FOR 'igTextWrapped'
 wrapper_text_wrapped :: proc(fmt_: string, args: ..any) {
     fmt_str := fmt.tprintf("{}\x00", fmt_);
     str := transmute([]byte)fmt.tprintf(fmt_str, ..args);
     igTextWrapped(cstring(&str[0]), nil);
 }
+
 
 // AUTO_GENERATED for 'igTreeNode_Str'
 swr_igTreeNode_Str :: proc(label: string) -> bool {

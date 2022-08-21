@@ -5,6 +5,9 @@ import "core:fmt"
 import "core:os"
 import "core:strings"
 import "core:encoding/json";
+import "core:unicode";
+import "core:unicode/utf8";
+import "core:io";
 
 DEFINITION_JSON_PATH       :: "./cimgui/generator/output/definitions.json";
 STRUCTS_AND_ENUM_JSON_PATH :: "./cimgui/generator/output/structs_and_enums.json";
@@ -42,8 +45,8 @@ output_enums :: proc(json_path: string, output_path: string) {
         return;
     }
 
-    sb := strings.make_builder();
-    defer strings.destroy_builder(&sb);
+    sb := strings.builder_make();
+    defer strings.builder_destroy(&sb);
     insert_package_header(&sb);
 
     Enum_Defintion :: struct {
@@ -60,26 +63,26 @@ output_enums :: proc(json_path: string, output_path: string) {
     definitions : [dynamic]Enum_Defintion;
     
     { // Gather
-        obj := js.value.(json.Object);
+        obj := js.(json.Object);
         blacklist : map[string]bool;
-        for k, v in obj["locations"].value.(json.Object) {
+        for k, v in obj["locations"].(json.Object) {
             location := get_value_string(v);
             if strings.has_prefix(location, "imgui_internal") do blacklist[k] = true;
         }
 
-        for k, v in obj["enums"].value.(json.Object) {
+        for k, v in obj["enums"].(json.Object) {
             def := Enum_Defintion{};
 
             if _, ok := blacklist[k]; ok do continue;
 
             def.name = k;
-            
-            for x in v.value.(json.Array) {
-                field := x.value.(json.Object);
+
+            for x in v.(json.Array) {
+                field := x.(json.Object);
                 res := Enum_Field{};
                 res.name = get_value_string(field["name"]);
 
-                #partial switch v in field["value"].value {
+                #partial switch v in field["value"] {
                     case json.Integer: {
                         res.value = int(v);
                     }
@@ -132,7 +135,7 @@ output_enums :: proc(json_path: string, output_path: string) {
 
                         case string: {
                             t := v;
-                            if strings.index(t, "_") > 0 do t = clean_field_key(t, def.name);
+                            if strings.index(t, "_") > 0 do t = clean_enum_value(t, def.name);
                             fmt.sbprint(&sb, t);
                         }
 
@@ -158,7 +161,7 @@ output_enums :: proc(json_path: string, output_path: string) {
     }
 
     { // File output
-        handle, err := os.open(output_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC);
+        handle, err := os.open(output_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o664);
             
         if err != os.ERROR_NONE {
             log.errorf("Couldn't create/open file for outputting enums! %v", err);                
@@ -177,12 +180,65 @@ output_enums :: proc(json_path: string, output_path: string) {
         return key;
     }
 
+    clean_enum_value :: proc(value: string, enum_name: string) -> string {
+        // Allow "-" in pascal case, so ENUM_VAL1 - ENUM_VAL2 is allowed.
+        is_delimiter_without_minus :: proc(c: rune) -> bool {
+            return c == '_' || strings.is_space(c)
+        }
+
+        to_pascal_case_without_minus :: proc(s: string, allocator := context.allocator) -> string {
+            using strings
+            s := s
+            s = trim_space(s)
+            b: Builder
+            builder_init(&b, 0, len(s), allocator)
+            w := to_writer(&b)
+        
+            string_case_iterator(w, s, proc(w: io.Writer, prev, curr, next: rune) {
+                if !is_delimiter_without_minus(curr) {
+                    if is_delimiter_without_minus(prev) || prev == 0 {
+                        io.write_rune(w, unicode.to_upper(curr))
+                    } else if unicode.is_lower(prev) {
+                        io.write_rune(w, curr)
+                    } else {
+                        io.write_rune(w, unicode.to_lower(curr))
+                    }
+                }
+            })
+        
+            return to_string(b)
+        }
+
+        value := value;
+        value = strings.trim_space(value);
+
+        // Both ImGui_Enum1 - ImGui_Enum2, need to have ImGui_ replaced.
+        new_str, _ := strings.replace_all(value, enum_name, "");
+        value = new_str
+        
+        value = strings.trim(value, "_");
+        value = to_pascal_case_without_minus(value);
+
+        return value;    
+    }
+
     clean_field_key :: proc(key: string, enum_name: string) -> string {
         key := key;
         key = strings.trim_space(key);
         key = key[len(enum_name):];
         key = strings.trim(key, "_");
         key = strings.to_pascal_case(key);
+        
+        first_rune, _ := utf8.decode_rune_in_string(key);
+        // If the Enum Key is 0-9, then add K before it.
+        // Example: 1 -> K1, 5 -> K5
+        if unicode.is_digit(first_rune) {
+            builder := strings.builder_make();
+            strings.write_rune(&builder, 'K');
+            strings.write_rune(&builder, first_rune);
+            return strings.to_string(builder);
+        }
+
         return key;
     }
 }
@@ -199,8 +255,8 @@ output_structs :: proc(json_path: string, output_path: string, predefined_entite
         return;
     }
 
-    sb := strings.make_builder();
-    defer strings.destroy_builder(&sb);
+    sb := strings.builder_make();
+    defer strings.builder_destroy(&sb);
     insert_package_header(&sb);
 
     Struct_Definition :: struct {
@@ -220,23 +276,23 @@ output_structs :: proc(json_path: string, output_path: string, predefined_entite
 
     
     { // Gather
-        obj := js.value.(json.Object);
+        obj := js.(json.Object);
         blacklist : map[string]bool;
-        for k, v in obj["locations"].value.(json.Object) {
+        for k, v in obj["locations"].(json.Object) {
             location := get_value_string(v);
             if strings.has_prefix(location, "imgui_internal") do blacklist[k] = true;
             if strings.has_prefix(location, "imstb_textedit") do blacklist[k] = true;
         }
 
-        for k, v in obj["structs"].value.(json.Object) {
+        for k, v in obj["structs"].(json.Object) {
             def := Struct_Definition{};
 
             if _, ok := blacklist[k]; ok do continue;
 
             def.name = k;
 
-            for x in v.value.(json.Array) {
-                field := x.value.(json.Object);
+            for x in v.(json.Array) {
+                field := x.(json.Object);
                 res := Struct_Field{};
 
                 res.size = get_optional_int(field, "size");
@@ -301,7 +357,7 @@ output_structs :: proc(json_path: string, output_path: string, predefined_entite
     }
 
     { // File output
-        handle, err := os.open(output_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC);
+        handle, err := os.open(output_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o664);
             
         if err != os.ERROR_NONE {
             log.errorf("Couldn't create/open file for outputting structs! %v", err);                

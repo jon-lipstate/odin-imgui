@@ -4,17 +4,44 @@ import "core:strings";
 import "core:fmt";
 import "core:strconv";
 
-insert_package_header :: proc(sb: ^strings.Builder) do fmt.sbprint(sb, "package imgui;\n\n");
+insert_package_header :: proc(sb: ^strings.Builder) { fmt.sbprint(sb, "package imgui;\n\n"); }
 
 right_pad :: proc(sb: ^strings.Builder, current: int, desired: int) {
     if desired-current <= 0 do return;
-    for _ in 0..(desired-current)-1 do fmt.sbprint(sb, " ");
+    for _ in 0..=(desired-current)-1 do fmt.sbprint(sb, " ");
 }
 
 name_type_map := map[string]string {
     "GetClipboardTextFn"     = `proc "c"(user_data : rawptr) -> cstring`,
     "SetClipboardTextFn"     = `proc "c"(user_data : rawptr, text : cstring)`,
+
     "ImeSetInputScreenPosFn" = `proc "c"(x, y : i32)`,
+    "SetPlatformImeDataFn"   = `proc "c"(viewport: ^Viewport, data: ^Platform_Ime_Data)`,
+    
+    "Platform_CreateWindow"  = `proc "c"(vp: ^Viewport)`,
+    "Platform_DestroyWindow"  = `proc "c"(vp: ^Viewport)`,
+    "Platform_ShowWindow"  = `proc "c"(vp: ^Viewport)`,
+    "Platform_SetWindowPos"  = `proc "c"(vp: ^Viewport, pos: Vec2)`,
+    "Platform_GetWindowPos"  = `proc "c"(vp: ^Viewport) -> Vec2`,
+    "Platform_SetWindowSize"  = `proc "c"(vp: ^Viewport, size: Vec2)`,
+    "Platform_GetWindowSize"  = `proc "c"(vp: ^Viewport) -> Vec2`,
+    "Platform_SetWindowFocus"  = `proc "c"(vp: ^Viewport)`,
+    "Platform_GetWindowFocus"  = `proc "c"(vp: ^Viewport) -> bool`,
+    "Platform_GetWindowMinimized"  = `proc "c"(vp: ^Viewport) -> bool`,
+    "Platform_SetWindowTitle"  = `proc "c"(vp: ^Viewport, str: cstring)`,
+    "Platform_SetWindowAlpha"  = `proc "c"(vp: ^Viewport, alpha: f32)`,
+    "Platform_UpdateWindow"  = `proc "c"(vp: ^Viewport)`,
+    "Platform_RenderWindow"  = `proc "c"(vp: ^Viewport, render_arg: rawptr)`,
+    "Platform_SwapBuffers"  = `proc "c"(vp: ^Viewport, render_arg: rawptr)`,
+    "Platform_GetWindowDpiScale"  = `proc "c"(vp: ^Viewport) -> f32`,
+    "Platform_OnChangedViewport"  = `proc "c"(vp: ^Viewport)`,
+    "Platform_CreateVkSurface"  = `proc "c"(vp: ^Viewport, vk_inst: u64, vk_allocators: rawptr, out_vk_surface: ^u64) -> i32`,
+
+    "Renderer_CreateWindow"  = `proc "c"(vp: ^Viewport)`,
+    "Renderer_DestroyWindow"  = `proc "c"(vp: ^Viewport)`,
+    "Renderer_SetWindowSize"  = `proc "c"(vp: ^Viewport, size: Vec2)`,
+    "Renderer_RenderWindow"  = `proc "c"(vp: ^Viewport, render_arg: rawptr)`,
+    "Renderer_SwapBuffers"  = `proc "c"(vp: ^Viewport, render_arg: rawptr)`,
 };
 
 struct_name_map := map[string]string {
@@ -45,6 +72,7 @@ type_map := map[string]string {
     "ImU32"  = "u32",
     "ImS8"   = "i8",
     "ImU8"   = "u8",
+    "ImU16"   = "u16",
     "ImS16"  = "i16",
     "ImU64"  = "u64",
 
@@ -96,6 +124,9 @@ type_map := map[string]string {
     "ImVector_unsigned_char"         = "Im_Vector(u8)",
 
     "ImGuiIO" = "IO",
+
+    "ImVector_ImGuiPlatformMonitor" = "Platform_Monitor",
+    "ImVector_ImGuiViewportPtr" = "Im_Vector(^Viewport)",
 };
 
 clean_type :: proc(type: string) -> string {
@@ -135,16 +166,16 @@ clean_type :: proc(type: string) -> string {
     }
 
     if size > 0 {
-        sb := strings.make_builder();
-        defer strings.destroy_builder(&sb);
+        sb := strings.builder_make();
+        defer strings.builder_destroy(&sb);
         fmt.sbprintf(&sb, "[{}]{}", size, t);
         t = strings.to_string(sb);
     }
 
     if count > 0 {
-        sb := strings.make_builder();
-        defer strings.destroy_builder(&sb);
-        for _ in 0..count-1 {
+        sb := strings.builder_make();
+        defer strings.builder_destroy(&sb);
+        for _ in 0..=count-1 {
             fmt.sbprint(&sb, '^');
         }
         fmt.sbprint(&sb, t);

@@ -16,15 +16,15 @@ output_wrappers :: proc(json_path: string, output_path: string, predefined_entit
     js, err := json.parse(json_bytes);
     defer json.destroy_value(js);
 
-    obj := js.value.(json.Object);
+    obj := js.(json.Object);
 
     if err != json.Error.None {
         log.error("Could not parse json file for foreign functions", err);
         return nil;
     }
 
-    sb := strings.make_builder();
-    defer strings.destroy_builder(&sb);
+    sb := strings.builder_make();
+    defer strings.builder_destroy(&sb);
     insert_package_header(&sb);
     fmt.sbprint(&sb, "import \"core:fmt\";\n");
     fmt.sbprint(&sb, "import \"core:strings\";\n");
@@ -79,7 +79,7 @@ output_wrappers :: proc(json_path: string, output_path: string, predefined_entit
     }
 
     { // File output 
-        handle, err := os.open(output_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC);
+        handle, err := os.open(output_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o664);
             
         if err != os.ERROR_NONE {
             log.errorf("Couldn't create/open file for outputting wrappers! %v", err);                

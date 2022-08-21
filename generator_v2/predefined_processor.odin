@@ -47,8 +47,8 @@ Wrapper_Func :: struct {
 output_predefined_copies :: proc(output_path: string, predefined_entities: []Predefined_Entity) {
     log.info(#location());
 
-    sb := strings.make_builder();
-    defer strings.destroy_builder(&sb);
+    sb := strings.builder_make();
+    defer strings.builder_destroy(&sb);
     insert_package_header(&sb);
 
     { // SB Output
@@ -63,8 +63,7 @@ output_predefined_copies :: proc(output_path: string, predefined_entities: []Pre
     }
 
     { // File output 
-        handle, err := os.open(output_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC);
-            
+        handle, err := os.open(output_path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o664);
         if err != os.ERROR_NONE {
             log.errorf("Couldn't create/open file for outputting predefined copies! %v", err);                
         }
@@ -106,9 +105,9 @@ process_predefined :: proc(odin_file_path: string) -> []Predefined_Entity {
     }
 
     for x in predefined_file.decls {
-        if decl, ok := x.derived.(ast.Value_Decl); ok {
+        if decl, ok := x.derived.(^ast.Value_Decl); ok {
             if len(decl.attributes) < 1 do continue;
-            decl_name := decl.names[0].derived.(ast.Ident).name;
+            decl_name := decl.names[0].derived.(^ast.Ident).name;
 
             for attr in decl.attributes {
                 for x in attr.elems {
@@ -129,9 +128,9 @@ process_predefined :: proc(odin_file_path: string) -> []Predefined_Entity {
                         }
 
                         case "wrapper": {
-                            switch v in decl.values[0].derived {
-                                case ast.Proc_Lit: {
-                                    w, ok := make_wrapper_from_ast(decl, attr_value, src);
+                            #partial switch v in decl.values[0].derived {
+                                case ^ast.Proc_Lit: {
+                                    w, ok := make_wrapper_from_ast(decl^, attr_value, src);
                                     if ok == false do continue;
 
                                     append(&res, w);
@@ -143,9 +142,9 @@ process_predefined :: proc(odin_file_path: string) -> []Predefined_Entity {
                             }
                         }
 
-                        case "foreign_overwrite": {
-                            switch v in decl.values[0].derived {
-                                case ast.Proc_Lit: {
+                         case "foreign_overwrite": {
+                            #partial switch v in decl.values[0].derived {
+                                case ^ast.Proc_Lit: {
                                     fo := Foreign_Overwrite{};
                                     fo.for_foreign = strings.clone(attr_value);
                                     fo.name = strings.clone(decl_name);
@@ -172,15 +171,15 @@ process_predefined :: proc(odin_file_path: string) -> []Predefined_Entity {
 
 @(private="file")
 make_wrapper_from_ast :: proc(decl: ast.Value_Decl, wrapper_for: string, src: []u8) -> (Wrapper_Func, bool) {
-    decl_name := decl.names[0].derived.(ast.Ident).name;
-    proc_type := (decl.values[0].derived.(ast.Proc_Lit)).type;
+    decl_name := decl.names[0].derived.(^ast.Ident).name;
+    proc_type := (decl.values[0].derived.(^ast.Proc_Lit)).type;
 
     res := Wrapper_Func{};
     res.name = strings.clone(decl_name);
     res.wrapper_for = strings.clone(wrapper_for);
 
     if proc_type.results != nil {
-        res.return_type = proc_type.results.list[0].type.derived.(ast.Ident).name;
+        res.return_type = proc_type.results.list[0].type.derived.(^ast.Ident).name;
     }
 
     if proc_type.params != nil {
@@ -196,7 +195,7 @@ make_wrapper_from_ast :: proc(decl: ast.Value_Decl, wrapper_for: string, src: []
         }
 
         for r in proc_type.results.list {
-            res.return_type = strings.clone(r.type.derived.(ast.Ident).name);
+            res.return_type = strings.clone(r.type.derived.(^ast.Ident).name);
         }
     }
 
@@ -207,32 +206,32 @@ make_wrapper_from_ast :: proc(decl: ast.Value_Decl, wrapper_for: string, src: []
 parse_params_from_ast :: proc(func: ^Wrapper_Func, proc_type: ^ast.Proc_Type, src: []u8) {
     for p in proc_type.params.list {
         param := Wrapper_Param{};
-        param.name = strings.clone(p.names[0].derived.(ast.Ident).name);
+        param.name = strings.clone(p.names[0].derived.(^ast.Ident).name);
         if p.default_value != nil {
-            switch e in p.default_value.derived {
-                case ast.Call_Expr:
-                    param.type = strings.clone(e.expr.derived.(ast.Ident).name);
-                    param.default_value = strings.clone(e.args[0].derived.(ast.Basic_Lit).tok.text);
-                case ast.Ident:
+            #partial switch e in p.default_value.derived {
+                case ^ast.Call_Expr:
+                    param.type = strings.clone(e.expr.derived.(^ast.Ident).name);
+                    param.default_value = strings.clone(e.args[0].derived.(^ast.Basic_Lit).tok.text);
+                case ^ast.Ident:
                     param.default_value = strings.clone(e.name);
                 case:
                     log.errorf("Unexpected default value! {}", e);
             }
         }
         if p.type != nil {
-            switch d in p.type.derived {
-                case ast.Ident:
+            #partial switch d in p.type.derived {
+                case ^ast.Ident:
                     param.type = strings.clone(d.name);
-                case ast.Array_Type:
+                case ^ast.Array_Type:
                     if d.len == nil {
-                        param.type = fmt.aprintf("[]%s", d.elem.derived.(ast.Ident).name);
+                        param.type = fmt.aprintf("[]%s", d.elem.derived.(^ast.Ident).name);
                     } else {
-                        param.type = fmt.aprintf("[%s]%s", d.len.derived.(ast.Basic_Lit).tok.text, d.elem.derived.(ast.Ident).name);
+                        param.type = fmt.aprintf("[%s]%s", d.len.derived.(^ast.Basic_Lit).tok.text, d.elem.derived.(^ast.Ident).name);
                     }
-                case ast.Pointer_Type:
-                    param.type = fmt.aprintf("^%s", d.elem.derived.(ast.Ident).name);
-                case ast.Ellipsis:
-                    param.type = fmt.aprintf("..{}", d.expr.derived.(ast.Ident).name);
+                case ^ast.Pointer_Type:
+                    param.type = fmt.aprintf("^%s", d.elem.derived.(^ast.Ident).name);
+                case ^ast.Ellipsis:
+                    param.type = fmt.aprintf("..{}", d.expr.derived.(^ast.Ident).name);
                 case :
                     log.errorf("Unexpected paramter type in wrapper '{}': %v, %#v", func.name, param.name, d);
             }
@@ -243,16 +242,16 @@ parse_params_from_ast :: proc(func: ^Wrapper_Func, proc_type: ^ast.Proc_Type, sr
 
 @(private="file")
 get_attr_elem :: proc(elem: ^ast.Expr) -> (name: string, value: string) {
-    switch x in elem.derived {
-        case ast.Field_Value: {
-            attr := x.field.derived.(ast.Ident);
-            attr_value := x.value.derived.(ast.Basic_Lit);
+    #partial switch x in elem.derived {
+        case ^ast.Field_Value: {
+            attr := x.field.derived.(^ast.Ident);
+            attr_value := x.value.derived.(^ast.Basic_Lit);
 
             name = attr.name;
             value = strings.trim(attr_value.tok.text, "\"");
         }
 
-        case ast.Ident: {
+        case ^ast.Ident: {
             name = x.name;
         }
     }

@@ -33,7 +33,7 @@ setup_state :: proc(using state: ^SDL_State) {
     io.key_map[imgui.Key.Space]       = i32(sdl.Scancode.SPACE);
     io.key_map[imgui.Key.Enter]       = i32(sdl.Scancode.RETURN);
     io.key_map[imgui.Key.Escape]      = i32(sdl.Scancode.ESCAPE);
-    io.key_map[imgui.Key.KeyPadEnter] = i32(sdl.Scancode.KP_ENTER);
+    io.key_map[imgui.Key.KeypadEnter] = i32(sdl.Scancode.KP_ENTER);
     io.key_map[imgui.Key.A]           = i32(sdl.Scancode.A);
     io.key_map[imgui.Key.C]           = i32(sdl.Scancode.C);
     io.key_map[imgui.Key.V]           = i32(sdl.Scancode.V);

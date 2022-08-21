@@ -39,6 +39,7 @@ Draw_Data :: struct {
 	display_pos:       Vec2,
 	display_size:      Vec2,
 	framebuffer_scale: Vec2,
+	owner_viewport:    ^Viewport,
 }
 
 //ImDrawList 
@@ -87,6 +88,7 @@ ImFont :: struct {
 	config_data_count:     i16,
 	fallback_char:         Wchar,
 	ellipsis_char:         Wchar,
+	dot_char:              Wchar,
 	dirty_lookup_tables:   bool,
 	scale:                 f32,
 	ascent:                f32,
@@ -102,6 +104,7 @@ Font_Atlas :: struct {
 	tex_desired_width:     i32,
 	tex_glyph_padding:     i32,
 	locked:                bool,
+	tex_ready:             bool,
 	tex_pixels_use_colors: bool,
 	tex_pixels_alpha8:     ^u8,
 	tex_pixels_rgba32:     ^u32,
@@ -187,7 +190,6 @@ IO :: struct {
 	mouse_double_click_time:                 f32,
 	mouse_double_click_max_dist:             f32,
 	mouse_drag_threshold:                    f32,
-	key_map:                                 [22]i32,
 	key_repeat_delay:                        f32,
 	key_repeat_rate:                         f32,
 	user_data:                               rawptr,
@@ -196,8 +198,17 @@ IO :: struct {
 	font_allow_user_scaling:                 bool,
 	font_default:                            ^ImFont,
 	display_framebuffer_scale:               Vec2,
+	config_docking_no_split:                 bool,
+	config_docking_with_shift:               bool,
+	config_docking_always_tab_bar:           bool,
+	config_docking_transparent_payload:      bool,
+	config_viewports_no_auto_merge:          bool,
+	config_viewports_no_task_bar_icon:       bool,
+	config_viewports_no_decoration:          bool,
+	config_viewports_no_default_parent:      bool,
 	mouse_draw_cursor:                       bool,
 	config_mac_osx_behaviors:                bool,
+	config_input_trickle_event_queue:        bool,
 	config_input_text_cursor_blink:          bool,
 	config_drag_click_to_input_text:         bool,
 	config_windows_resize_from_edges:        bool,
@@ -211,18 +222,8 @@ IO :: struct {
 	get_clipboard_text_fn:                   proc "c"(user_data : rawptr) -> cstring,
 	set_clipboard_text_fn:                   proc "c"(user_data : rawptr, text : cstring),
 	clipboard_user_data:                     rawptr,
-	ime_set_input_screen_pos_fn:             proc "c"(x, y : i32),
-	ime_window_handle:                       rawptr,
-	mouse_pos:                               Vec2,
-	mouse_down:                              [5]bool,
-	mouse_wheel:                             f32,
-	mouse_wheel_h:                           f32,
-	key_ctrl:                                bool,
-	key_shift:                               bool,
-	key_alt:                                 bool,
-	key_super:                               bool,
-	keys_down:                               [512]bool,
-	nav_inputs:                              [21]f32,
+	set_platform_ime_data_fn:                proc "c"(viewport: ^Viewport, data: ^Platform_Ime_Data),
+	_unused_padding:                         rawptr,
 	want_capture_mouse:                      bool,
 	want_capture_keyboard:                   bool,
 	want_text_input:                         bool,
@@ -237,24 +238,42 @@ IO :: struct {
 	metrics_active_windows:                  i32,
 	metrics_active_allocations:              i32,
 	mouse_delta:                             Vec2,
-	key_mods:                                Key_Mod_Flags,
+	key_map:                                 [645]i32,
+	keys_down:                               [645]bool,
+	mouse_pos:                               Vec2,
+	mouse_down:                              [5]bool,
+	mouse_wheel:                             f32,
+	mouse_wheel_h:                           f32,
+	mouse_hovered_viewport:                  ImID,
+	key_ctrl:                                bool,
+	key_shift:                               bool,
+	key_alt:                                 bool,
+	key_super:                               bool,
+	nav_inputs:                              [20]f32,
+	key_mods:                                Mod_Flags,
+	keys_data:                               [645]Key_Data,
+	want_capture_mouse_unless_popup_close:   bool,
 	mouse_pos_prev:                          Vec2,
 	mouse_clicked_pos:                       [5]Vec2,
 	mouse_clicked_time:                      [5]f64,
 	mouse_clicked:                           [5]bool,
 	mouse_double_clicked:                    [5]bool,
+	mouse_clicked_count:                     [5]u16,
+	mouse_clicked_last_count:                [5]u16,
 	mouse_released:                          [5]bool,
 	mouse_down_owned:                        [5]bool,
-	mouse_down_was_double_click:             [5]bool,
+	mouse_down_owned_unless_popup_close:     [5]bool,
 	mouse_down_duration:                     [5]f32,
 	mouse_down_duration_prev:                [5]f32,
 	mouse_drag_max_distance_abs:             [5]Vec2,
 	mouse_drag_max_distance_sqr:             [5]f32,
-	keys_down_duration:                      [512]f32,
-	keys_down_duration_prev:                 [512]f32,
-	nav_inputs_down_duration:                [21]f32,
-	nav_inputs_down_duration_prev:           [21]f32,
+	nav_inputs_down_duration:                [20]f32,
+	nav_inputs_down_duration_prev:           [20]f32,
 	pen_pressure:                            f32,
+	app_focus_lost:                          bool,
+	app_accepting_events:                    bool,
+	backend_using_legacy_key_arrays:         i8,
+	backend_using_legacy_nav_input_array:    bool,
 	input_queue_surrogate:                   Wchar16,
 	input_queue_characters:                  Im_Vector(Wchar),
 }
@@ -275,15 +294,22 @@ Input_Text_Callback_Data :: struct {
 	selection_end:   i32,
 }
 
+//ImGuiKeyData 
+Key_Data :: struct {
+	down:               bool,
+	down_duration:      f32,
+	down_duration_prev: f32,
+	analog_value:       f32,
+}
+
 //ImGuiListClipper 
 List_Clipper :: struct {
 	display_start: i32,
 	display_end:   i32,
 	items_count:   i32,
-	step_no:       i32,
-	items_frozen:  i32,
 	items_height:  f32,
 	start_pos_y:   f32,
+	temp_data:     rawptr,
 }
 
 //ImGuiOnceUponAFrame 
@@ -301,6 +327,51 @@ Payload :: struct {
 	data_type:        [33]i8,
 	preview:          bool,
 	delivery:         bool,
+}
+
+//ImGuiPlatformIO 
+Platform_Io :: struct {
+	platform_create_window:        proc "c"(vp: ^Viewport),
+	platform_destroy_window:       proc "c"(vp: ^Viewport),
+	platform_show_window:          proc "c"(vp: ^Viewport),
+	platform_set_window_pos:       proc "c"(vp: ^Viewport, pos: Vec2),
+	platform_get_window_pos:       proc "c"(vp: ^Viewport) -> Vec2,
+	platform_set_window_size:      proc "c"(vp: ^Viewport, size: Vec2),
+	platform_get_window_size:      proc "c"(vp: ^Viewport) -> Vec2,
+	platform_set_window_focus:     proc "c"(vp: ^Viewport),
+	platform_get_window_focus:     proc "c"(vp: ^Viewport) -> bool,
+	platform_get_window_minimized: proc "c"(vp: ^Viewport) -> bool,
+	platform_set_window_title:     proc "c"(vp: ^Viewport, str: cstring),
+	platform_set_window_alpha:     proc "c"(vp: ^Viewport, alpha: f32),
+	platform_update_window:        proc "c"(vp: ^Viewport),
+	platform_render_window:        proc "c"(vp: ^Viewport, render_arg: rawptr),
+	platform_swap_buffers:         proc "c"(vp: ^Viewport, render_arg: rawptr),
+	platform_get_window_dpi_scale: proc "c"(vp: ^Viewport) -> f32,
+	platform_on_changed_viewport:  proc "c"(vp: ^Viewport),
+	platform_create_vk_surface:    proc "c"(vp: ^Viewport, vk_inst: u64, vk_allocators: rawptr, out_vk_surface: ^u64) -> i32,
+	renderer_create_window:        proc "c"(vp: ^Viewport),
+	renderer_destroy_window:       proc "c"(vp: ^Viewport),
+	renderer_set_window_size:      proc "c"(vp: ^Viewport, size: Vec2),
+	renderer_render_window:        proc "c"(vp: ^Viewport, render_arg: rawptr),
+	renderer_swap_buffers:         proc "c"(vp: ^Viewport, render_arg: rawptr),
+	monitors:                      Platform_Monitor,
+	viewports:                     Im_Vector(^Viewport),
+}
+
+//ImGuiPlatformImeData 
+Platform_Ime_Data :: struct {
+	want_visible:      bool,
+	input_pos:         Vec2,
+	input_line_height: f32,
+}
+
+//ImGuiPlatformMonitor 
+Platform_Monitor :: struct {
+	main_pos:  Vec2,
+	main_size: Vec2,
+	work_pos:  Vec2,
+	work_size: Vec2,
+	dpi_scale: f32,
 }
 
 //ImGuiSizeCallbackData 
@@ -325,9 +396,11 @@ Storage_Pair :: struct {
     },
 }
 
+
 //ImGuiStyle 
 Style :: struct {
 	alpha:                          f32,
+	disabled_alpha:                 f32,
 	window_padding:                 Vec2,
 	window_rounding:                f32,
 	window_border_size:             f32,
@@ -366,7 +439,7 @@ Style :: struct {
 	anti_aliased_fill:              bool,
 	curve_tessellation_tol:         f32,
 	circle_tessellation_max_error:  f32,
-	colors:                         [53]Vec4,
+	colors:                         [55]Vec4,
 }
 
 //ImGuiTableColumnSortSpecs 
@@ -404,11 +477,34 @@ Text_Range :: struct {
 
 //ImGuiViewport 
 Viewport :: struct {
-	flags:     Viewport_Flags,
-	pos:       Vec2,
-	size:      Vec2,
-	work_pos:  Vec2,
-	work_size: Vec2,
+	id:                      ImID,
+	flags:                   Viewport_Flags,
+	pos:                     Vec2,
+	size:                    Vec2,
+	work_pos:                Vec2,
+	work_size:               Vec2,
+	dpi_scale:               f32,
+	parent_viewport_id:      ImID,
+	draw_data:               ^Draw_Data,
+	renderer_user_data:      rawptr,
+	platform_user_data:      rawptr,
+	platform_handle:         rawptr,
+	platform_handle_raw:     rawptr,
+	platform_request_move:   bool,
+	platform_request_resize: bool,
+	platform_request_close:  bool,
+}
+
+//ImGuiWindowClass 
+Window_Class :: struct {
+	class_id:                      ImID,
+	parent_viewport_id:            ImID,
+	viewport_flags_override_set:   Viewport_Flags,
+	viewport_flags_override_clear: Viewport_Flags,
+	tab_item_flags_override_set:   Tab_Item_Flags,
+	dock_node_flags_override_set:  Dock_Node_Flags,
+	docking_always_tab_bar:        bool,
+	docking_allow_unclassed:       bool,
 }
 
 //ImVec2 
