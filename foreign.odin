@@ -118,6 +118,9 @@ foreign cimgui {
 	ImFontAtlas_IsBuilt                               :: proc(self: ^Font_Atlas) -> bool ---;
 	ImFontAtlas_SetTexID                              :: proc(self: ^Font_Atlas, id: Texture_ID) ---;
 
+	ImFontConfig_ImFontConfig :: proc() -> ^Font_Config ---
+	ImFontConfig_destroy :: proc(self: ^Font_Config) ---
+
 	ImFontGlyphRangesBuilder_AddChar     :: proc(self: ^Font_Glyph_Ranges_Builder, c: Wchar) ---;
 	ImFontGlyphRangesBuilder_AddRanges   :: proc(self: ^Font_Glyph_Ranges_Builder, ranges: ^Wchar) ---;
 	ImFontGlyphRangesBuilder_AddText     :: proc(self: ^Font_Glyph_Ranges_Builder, text: cstring, text_end: cstring) ---;
