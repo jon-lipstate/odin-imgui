@@ -51,10 +51,8 @@ output_foreign :: proc(json_path: string, output_path: string, predefined_entite
 
     groups : [dynamic]Foreign_Func_Group;
     overwrites : map[string]Foreign_Overwrite;
-
     { // Gather
         gather_foreign_proc_groups(&groups, obj);
-
         for e in predefined_entites {
             #partial switch fo in e {
                 case Foreign_Overwrite: {
@@ -337,6 +335,10 @@ gather_foreign_proc_groups :: proc(groups : ^[dynamic]Foreign_Func_Group, obj: j
             ov_obj := ov.(json.Object);
             if is_vector(ov_obj)            do continue;
             if is_function_internal(ov_obj) do continue;
+            // TODO: Refactor this to remove some unnecessary ctors or dtors, but keep the necessary ctors/dtors.
+            // We need:
+            // ImFontConfig_ImFontConfig
+            // ImFontConfig_destroy
             if is_ctor_dtor(ov_obj)         do continue;
 
             f, ok := convert_json_to_foreign_func(ov_obj);
@@ -372,6 +374,12 @@ gather_foreign_proc_groups :: proc(groups : ^[dynamic]Foreign_Func_Group, obj: j
 is_ctor_dtor :: proc(obj: json.Object) -> bool {
     ctor := get_optional_bool(obj, "constructor");
     dtor := get_optional_bool(obj, "destructor");
+
+    cimgui_name, _ := obj["cimguiname"].(json.String)
+    if cimgui_name == "ImFontConfig_ImFontConfig" || cimgui_name == "ImFontConfig_destroy" {
+        return false
+    }
+
     return ctor == true || dtor == true;
 }
 
