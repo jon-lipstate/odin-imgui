@@ -58,7 +58,8 @@ setup_state :: proc(window: glfw.WindowHandle, install_callbacks: bool) {
     io.clipboard_user_data = state.window;
 
     when ODIN_OS == .Windows {
-        io.ime_window_handle = rawptr(glfw.get_win32_window(state.window));
+        vp := imgui.get_main_viewport()
+        vp.platform_handle_raw = rawptr(glfw.GetWin32Window(state.window));
     }
 
     prev_error_callback: glfw.ErrorProc = glfw.SetErrorCallback(nil);
