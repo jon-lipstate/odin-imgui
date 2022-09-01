@@ -34,9 +34,9 @@ Implementations are reusable bits of code using popular odin libraries/bidings, 
 If you want to build cimgui yourself instead of using the binaries that exist in the repo, you can just call `make cimgui` from a command prompt that has `cl` and `link` in their path.
 
 Notes:
-Run x64 Developer Command Prompt as the adminstrator. Must be x64.
-Make sure to have these paths inside your `System Variables` PATH.
-![image](https://user-images.githubusercontent.com/51396418/187850922-89a263fe-23da-4b00-af22-b6d82dd82c11.png)
+* Run x64 Developer Command Prompt as the adminstrator. Must be x64.
+* Make sure to have these paths inside your `System Variables` PATH:
+* ![image](https://user-images.githubusercontent.com/51396418/187850922-89a263fe-23da-4b00-af22-b6d82dd82c11.png)
 
 
 ### Linux
